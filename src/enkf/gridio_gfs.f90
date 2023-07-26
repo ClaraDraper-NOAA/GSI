@@ -782,8 +782,8 @@
 
   !==> get U,V,temp,q,ps on gaussian grid.
   ! u is first nlevs, v is second, t is third, then tracers.
+  clip=tiny_r_kind
   if (use_gfs_nemsio) then
-     clip=tiny_r_kind
      do k=1,nlevs
         call nemsio_readrecv(gfile,'ugrd','mid layer',k,nems_wrk,iret=iret)
         if (iret/=0) then

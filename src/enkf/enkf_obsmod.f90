@@ -262,7 +262,8 @@ allocate(oblnp(nobstot)) ! log(p) at ob locations.
 allocate(corrlengthsq(nobstot),lnsigl(nobstot),obtimel(nobstot))
 lnsigl=1.e10
 do nob=1,nobstot
-   oblnp(nob) = -log(obpress(nob)) ! distance measured in log(p) units
+   ! max to prevent crash got 0 pressure obs.
+   oblnp(nob) = -log(max(obpress(nob),0.01)) ! distance measured in log(p) units
    if (obloclon(nob) < zero) obloclon(nob) = obloclon(nob) + 360._r_single
    radlon=deg2rad*obloclon(nob)
    radlat=deg2rad*obloclat(nob)
