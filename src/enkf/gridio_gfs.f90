@@ -44,7 +44,7 @@
  use constants, only: zero,one,cp,fv,rd,tiny_r_kind,max_varname_length,t0c,r0_05
  use params, only: nlons,nlats,nlevs,use_gfs_nemsio,pseudo_rh, &
                    cliptracers,datapath,imp_physics,use_gfs_ncio,cnvw_option, &
-                   nanals
+                   nanals, renorm_RH
  use kinds, only: i_kind,r_double,r_kind,r_single
  use gridinfo, only: ntrunc,npts  ! gridinfo must be called first!
  use specmod, only: sptezv_s, sptez_s, init_spec_vars, ndimspec => nc, &
@@ -649,7 +649,6 @@
      do k=1,nlevs+1
         ! k=1 in ak,bk is model top
         pressi(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*psg
-        if (nanal .eq. 1) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
      enddo
      deallocate(ak,bk)
   else
@@ -994,7 +993,7 @@
   else
      qsat(:,:,nb,ne) = 1._r_double
   end if
-
+  
   ! cloud derivatives
   if (.not. use_full_hydro) then
   if (ql_ind > 0 .or. qi_ind > 0) then
@@ -1975,7 +1974,7 @@
 
 
 
- subroutine writegriddata(nanal1,nanal2,vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag)
+ subroutine writegriddata(nanal1,nanal2,vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag,qsat)
   use netcdf
   use sigio_module, only: sigio_head, sigio_data, sigio_sclose, sigio_sropen, &
                           sigio_srohdc, sigio_sclose, sigio_axdata, &
@@ -2001,6 +2000,7 @@
   integer, dimension(0:n3d), intent(in) :: levels
   real(r_single), dimension(npts,ndim,nbackgrounds,nanal2-nanal1+1), intent(inout) :: grdin
   logical, intent(in) :: no_inflate_flag
+  real(r_double), dimension(npts,ndim,nbackgrounds,nanal2-nanal1+1), intent(in) :: qsat
   logical:: use_full_hydro
   character(len=500):: filenamein, filenameout
   real(r_kind), allocatable, dimension(:,:) :: vmassdiv,dpanl,dpfg,pressi
@@ -2041,9 +2041,12 @@
   integer :: ps_ind, pst_ind, nbits
   integer :: ql_ind, qi_ind, qr_ind, qs_ind, qg_ind
 
-  integer k,krev,nt,ierr,iunitsig,nb,i,ne,nanal
+  integer k,krev,nt,ierr,iunitsig,nb,i,ne,nanal,x,y
+  real(r_double), allocatable, dimension(:,:) :: qsat_anal
+  real(r_single), allocatable, dimension(:,:) :: tv_anal2d, q2d
+  real(r_single), allocatable, dimension(:,:) :: pslg, tmp2d
 
-  logical :: nocompress
+  logical :: nocompress, ice
   logical :: write_sfc_file, write_atm_file
 
   call set_ncio_file_flags(vars3d, n3d, vars2d, n2d, write_sfc_file, write_atm_file)
@@ -2206,11 +2209,13 @@
      allocate(vmassdivinc(nlons*nlats,nlevs))
      allocate(dpfg(nlons*nlats,nlevs))
      allocate(dpanl(nlons*nlats,nlevs))
-     allocate(pressi(nlons*nlats,nlevs+1))
      allocate(pstendfg(nlons*nlats))
      allocate(pstend1(nlons*nlats))
      allocate(pstend2(nlons*nlats),vmass(nlons*nlats))
      allocate(ugtmp(nlons*nlats,nlevs),vgtmp(nlons*nlats,nlevs))
+  endif
+  if (pst_ind > 0 .or. renorm_RH ) then
+     allocate(pressi(nlons*nlats,nlevs+1))
   endif
 ! if (imp_physics == 11) allocate(work(nlons*nlats))    !orig
   if (imp_physics == 11 .and. (.not. use_full_hydro) ) allocate(work(nlons*nlats))
@@ -3089,6 +3094,50 @@
            call stop2(29)
         endif
      endif
+! CSD 
+     if (renorm_RH) then 
+     ! note: genqsat assumes k=1  is model bottom. will need to flip
+         allocate(qsat_anal(npts,nlevs) ) 
+         allocate( tv_anal2d(npts,nlevs), q2d(npts,nlevs))
+         allocate(pslg(npts,nlevs))
+         allocate(tmp2d(nlons,nlats))
+         ice = .false.
+         kap = rd/cp
+         kapr = cp/rd
+         kap1 = kap+one
+         do k=1,nlevs
+            krev = nlevs-k+1
+            tv_anal2d(:,k) = reshape(tv_anal(:,:,krev), (/nlons*nlats/))
+            q2d(:,k) = reshape( vg3d(:,:,krev), (/nlons*nlats/))
+         enddo
+
+         do k=1,nlevs+1 ! ak has already been flipped
+            pressi(:,k)=ak(k)+bk(k)*psg ! psg in mb, ak has been scaled by 0.01
+         enddo
+
+         do k=1,nlevs
+            ! layer pressure from phillips vertical interolation (used for qsat
+            ! calculation)
+            ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
+                    (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
+            call copytogrdin(ug,pslg(:,k))
+          end do
+
+         call genqsat1(q2d,qsat_anal,pslg,tv_anal2d,ice,npts,nlevs)
+
+         ! qsat_anal, k=1 is bottom. model states are the opposite.
+         do k=1,nlevs
+            krev = nlevs-k+1
+            tmp2d = reshape(qsat_anal(:,krev)/qsat(:,krev,nb,ne), (/nlons,nlats/))
+            do x=1,nlons 
+            do y=1,nlats
+                vg3d(x,y,k) = vg3d(x,y,k)*tmp2d(x,y)
+            enddo
+            enddo
+         enddo
+         deallocate(qsat_anal, tv_anal2d,q2d, pslg,tmp2d)
+
+     endif
      deallocate(tv_anal,tv_bg) ! keep tmp_anal
 
      ! write analysis q (still stored in vg3d)
@@ -3453,6 +3502,20 @@
  endif
 
  end subroutine copyfromgrdin
+ ! copying to grdin (calling regtoreduced if reduced grid)
+  subroutine copytogrdin(field, grdin)
+  implicit none
+
+  real(r_kind), dimension(:), intent(in)      :: field
+  real(r_single), dimension(:), intent(inout) :: grdin
+
+  if (reducedgrid) then
+    call regtoreduced(field, grdin)
+  else
+    grdin = field
+  endif
+
+  end subroutine copytogrdin
 
  end subroutine writegriddata
 

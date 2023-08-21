@@ -158,7 +158,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   use oneobmod, only: oneobtest,maginnov,magoberr
   use guess_grids, only: ges_lnprsl,hrdifsig,nfldsig,ges_tsen,ges_prsl,pbl_height,ges_qsat
   use gridmod, only: lat2,lon2,nsig,get_ijk,twodvar_regional
-  use constants, only: zero,one,r1000,r10,r100
+  use constants, only: zero,one,r1000,r10,r100, one, fv
   use constants, only: huge_single,wgtlim,three
   use constants, only: tiny_r_kind,five,half,two,huge_r_kind,r0_01
   use qcmod, only: npres_print,ptopq,pbotq,dfact,dfact1,njqc,vqc,nvqc
@@ -287,6 +287,8 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   type(obsLList),pointer,dimension(:):: qhead
 
   logical :: landsfctype
+  
+  real(r_kind) :: tvob, tsob, qsob
 
   real(r_kind) :: delta_z,  lapse_error, q_delta_terrain
   real(r_kind), parameter :: T_lapse = -0.0045 ! standard lapse rate, K/m
@@ -339,6 +341,16 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
+
+  !print *, 'CSD - screening obs top'
+  !do i = 1, nobs
+  !if ( ( data(ilate,i) > 40.) .and. (data(ilate,i) < 40.5) .and. &
+  !      (data(ilone,i) > 270.5) .and. (data(ilone, i) < 271.0) ) then
+  !      print *, 'CSDCSD - keeping', data(ilate,i), data(ilone,i)
+  !else
+  !           muse(i)=.false.
+  !endif
+  !enddo
 !  If HD raobs available move prepbufr version to monitor
   if(nhdq > 0)then
      iprev_station=0
@@ -445,15 +457,16 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   iderivative=0
 
   ! calculate qsat and 2m qsat
+  ! ges_ps is in kPa
   do jj=1,nfldsig
      call genqsat(qg(:,:,:,jj),ges_tsen(:,:,:,jj),ges_prsl(:,:,:,jj),lat2,lon2,nsig,ice,iderivative)
      if (i_use_2mq4b > 0) then  ! use lowest model level
        qg2m(:,:,jj)=qg(:,:,1,jj)
      elseif ( hofx_2m_sfcfile ) then  ! calculate from 2m model output
+      
        call genqsat(qg2m(:,:,jj),ges_t2m(:,:,jj),ges_ps(:,:,jj),lat2,lon2,1,ice,iderivative)
      endif
   end do
-
 
 ! Prepare specific humidity data
   call dtime_setup()
@@ -562,14 +575,28 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
         qob=min(qob,superfact*qsges)
      end if
 
+     tvob = data(itemp,i) ! tvirtual ob
+     if (tvob < 990.)  then 
+        tsob = tvob*(one+fv*qob)  ! tsensible ob in K.
+     else 
+        muse(i)=.false.
+     endif
+
 ! get qsges, to be used to scale the obs error
      call tintrp31(qg,qsges,dlat,dlon,dpres,dtime,hrdifsig,&
           mype,nfldsig)
+
+! get qsobs
+    ! 0.1 puts prest in kPa.
+    !write(6,*) 'CSDqsatcalc', tvob, tsob, 0.1*prest
+    call genqsat(qsob,tsob,0.1*prest,1,1,1,ice,iderivative)
+    !write(6,*) 'CSDqsat', qsges, qsob
 
 ! overwrite qsges with 2-m qs if sfc obs scheme
      if( ( (i_use_2mq4b > 0) .and. ((itype > 179 .and. itype < 190) .or. itype == 199) &
             .and.  .not.twodvar_regional) .or. (hofx_2m_sfcfile .and. landsfctype)  )then
         call tintrp2a11(qg2m,qsges,dlat,dlon,dtime,hrdifsig,mype,nfldsig)
+      
      endif
 
 !    Load obs error and value into local variables
@@ -897,6 +924,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
      if(conv_diagsave .and. luse(i))then
         ii=ii+1
         rstation_id     = data(id,i)
+! CSD - change here?
         err_input = data(ier2,i)*qsges            ! convert rh to q
         err_adjst = data(ier,i)*qsges             ! convert rh to q
         if (ratio_errors*error>tiny_r_kind) then
@@ -904,6 +932,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
         else
            err_final = huge_single
         endif
+
 
         errinv_input = huge_single
         errinv_adjst = huge_single
@@ -1386,6 +1415,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            call nc_diag_metadata("Observation",                   sngl(data(iqob,i)))
            call nc_diag_metadata("Obs_Minus_Forecast_adjusted",   sngl(ddiff)       )
            call nc_diag_metadata("Obs_Minus_Forecast_unadjusted", sngl(qob-qges)    )
+           call nc_diag_metadata("Observed_Saturation_Spec_Hum",  sngl(qsob)       )
            call nc_diag_metadata("Forecast_Saturation_Spec_Hum",  sngl(qsges)       )
            if (lobsdiagsave) then
               do jj=1,miter
@@ -1451,6 +1481,7 @@ subroutine setupq(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            call nc_diag_metadata("Obs_Minus_Forecast_adjusted",   sngl(ddiff)       )
            call nc_diag_metadata("Obs_Minus_Forecast_unadjusted", sngl(ddiff)       )
            call nc_diag_metadata("Forecast_Saturation_Spec_Hum",  sngl(qsges)       )
+           call nc_diag_metadata("Observed_Saturation_Spec_Hum",  sngl(qsob)       )
 !----
            if (lobsdiagsave) then
               do jj=1,miter

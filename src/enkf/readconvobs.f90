@@ -34,7 +34,7 @@ module readconvobs
 use kinds, only: r_kind,i_kind,r_single,r_double
 use constants, only: one,zero,deg2rad
 use params, only: npefiles, netcdf_diag, modelspace_vloc, &
-                  l_use_enkf_directZDA, qobs_pseudo_rh
+                  l_use_enkf_directZDA
 implicit none
 
 private
@@ -269,6 +269,7 @@ subroutine get_num_convobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
   real(r_single), allocatable, dimension (:) :: Errinv_Final, GPS_Type
   real(r_single), allocatable, dimension (:) :: Observation, v_Observation
   real(r_single), allocatable, dimension (:) :: Forecast_Saturation_Spec_Hum
+  real(r_single), allocatable, dimension (:) :: Observed_Saturation_Spec_Hum
 
     ! If ob error > errorlimit or < errorlimit2, skip it.
     errorlimit = 1._r_kind/sqrt(1.e9_r_kind)
@@ -326,11 +327,9 @@ subroutine get_num_convobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
         endif
         if (obtype == '  q') then
            allocate(Forecast_Saturation_Spec_Hum(nobs_curr))
-           if ( qobs_pseudo_rh ) then
-              call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Forecast_Saturation_Spec_Hum)
-           else
-               Forecast_Saturation_Spec_Hum=1.
-           endif
+           allocate(Observed_Saturation_Spec_Hum(nobs_curr))
+           call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Forecast_Saturation_Spec_Hum)
+           call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Observed_Saturation_Spec_Hum)
         endif
 
         call nc_diag_read_close(obsfile)
@@ -346,7 +345,9 @@ subroutine get_num_convobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
 
            ! for q, normalize by qsatges
            if (obtype == '  q') then
-              obmax     = abs(Observation(i) / Forecast_Saturation_Spec_Hum(i))
+              obmax     = abs(Observation(i) / Observed_Saturation_Spec_Hum(i))
+              ! Errinv in output file is 1/(specified_error*forecast model)
+              ! Here : converting back to specified error (in RH)
               error     = Errinv_Final(i) * Forecast_Saturation_Spec_Hum(i)
            else
               obmax     = abs(Observation(i))
@@ -394,6 +395,7 @@ subroutine get_num_convobs_nc(obspath,datestring,num_obs_tot,num_obs_totdiag,id)
         endif
         if (obtype == '  q') then
            deallocate(Forecast_Saturation_Spec_Hum)
+           deallocate(Observed_Saturation_Spec_Hum)
         endif
 
      enddo peloop
@@ -514,6 +516,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
   real(r_single), allocatable, dimension (:) :: Obs_Minus_Forecast_adjusted2, v_Obs_Minus_Forecast_adjusted2
   real(r_single), allocatable, dimension (:) :: Obs_Minus_Forecast_unadjusted2, v_Obs_Minus_Forecast_unadjusted2
   real(r_single), allocatable, dimension (:) :: Forecast_Saturation_Spec_Hum
+  real(r_single), allocatable, dimension (:) :: Observed_Saturation_Spec_Hum
   integer(i_kind), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_stind, v_Observation_Operator_Jacobian_stind
   integer(i_kind), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_endind, v_Observation_Operator_Jacobian_endind
   real(r_single), allocatable, dimension (:,:) :: Observation_Operator_Jacobian_val, v_Observation_Operator_Jacobian_val
@@ -605,11 +608,9 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
         endif
         if (obtype == '  q') then
            allocate(Forecast_Saturation_Spec_Hum(nobs))
-           if ( qobs_pseudo_rh ) then
-              call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Forecast_Saturation_Spec_Hum)
-           else
-               Forecast_Saturation_Spec_Hum=1.
-           endif
+           allocate(Observed_Saturation_Spec_Hum(nobs))
+           call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Forecast_Saturation_Spec_Hum)
+           call nc_diag_read_get_var(iunit, 'Forecast_Saturation_Spec_Hum', Observed_Saturation_Spec_Hum)
         endif
         if (lobsdiag_forenkf) then
           call nc_diag_read_get_global_attr(iunit, "jac_nnz", nnz)
@@ -678,8 +679,12 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
            endif
 
            ! for q, normalize by qsatges
+           ! Errinv_Input and Errinv_Final are both 1/R*qsat, where R is specified error. 
+           ! Multiplying this by qsat, brings the error back to R. (correct).
            if (obtype == '  q') then
-              obmax     = abs(real(Observation(i),r_single) / real(Forecast_Saturation_Spec_Hum(i),r_single))
+              obmax     = abs(real(Observation(i),r_single) / real(Observed_Saturation_Spec_Hum(i),r_single))
+              ! Errinv in output file is 1/(specified_error*forecast model)
+              ! Here : converting back to specified error (in RH)
               errororig = real(Errinv_Input(i),r_single) * real(Forecast_Saturation_Spec_Hum(i),r_single)
               error     = real(Errinv_Final(i),r_single) * real(Forecast_Saturation_Spec_Hum(i),r_single)
            else
@@ -779,7 +784,6 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
                                  iyp, delyp, it, delt, itp, deltp)
                  ! compute modulated ensemble in obs space
                  if (neigv>0) call calc_linhx_modens(hx_mean(nob),dhx_dx,hxpert,hx_modens(:,nob),vlocal_evecs)
-
                  t2 = mpi_wtime()
                  tsum = tsum + t2-t1
 
@@ -795,7 +799,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
 
            ! normalize q by qsatges
            if (obtype == '  q') then
-              x_obs(nob)   = x_obs(nob) /Forecast_Saturation_Spec_Hum(i)
+              x_obs(nob)   = x_obs(nob) /Observed_Saturation_Spec_Hum(i)
               hx_mean(nob)     = hx_mean(nob) /Forecast_Saturation_Spec_Hum(i)
               hx_mean_nobc(nob) = hx_mean_nobc(nob) /Forecast_Saturation_Spec_Hum(i)
               if (neigv>0) then
@@ -893,6 +897,7 @@ subroutine get_convobs_data_nc(obspath, datestring, nobs_max, nobs_maxdiag,   &
 
         if (obtype == '  q') then
            deallocate(Forecast_Saturation_Spec_Hum)
+           deallocate(Observed_Saturation_Spec_Hum)
         endif
 
         if (lobsdiag_forenkf) then

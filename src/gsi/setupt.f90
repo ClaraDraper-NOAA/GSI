@@ -414,6 +414,16 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
+  !print *, 'CSD - screening obs top'
+  !do i = 1, nobs
+  !if ( ( data(ilate,i) > 40.) .and. (data(ilate,i) < 40.5) .and. &
+  !      (data(ilone,i) > 270.5) .and. (data(ilone, i) < 271.0) ) then
+  !      print *, 'CSDCSD - keeping', data(ilate,i), data(ilone,i)
+  !else
+  !           muse(i)=.false.
+  !endif
+  !enddo
+
 !  If HD raobs available move prepbufr version to monitor
   if(nhdt > 0)then
      iprev_station=0

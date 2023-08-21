@@ -380,7 +380,7 @@ if (nproc <= ntasks_io-1) then
       if (write_fv3_incr) then
          call writeincrement(nanal1(nproc),nanal2(nproc),cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin,no_inflate_flag)
       else
-         call writegriddata(nanal1(nproc),nanal2(nproc),cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin,no_inflate_flag)
+         call writegriddata(nanal1(nproc),nanal2(nproc),cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin,no_inflate_flag, qsat)
       end if
       if (nproc == 0) then
         if (write_ensmean) then
@@ -388,7 +388,7 @@ if (nproc <= ntasks_io-1) then
            if (write_fv3_incr) then
               call writeincrement(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
            else
-              call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
+              call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag, qsat)
            end if
         endif
         deallocate(grdin_mean)
@@ -411,7 +411,7 @@ if (paranc) then
         if (write_fv3_incr) then
            call writeincrement(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
         else
-           call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag)
+           call writegriddata(0,0,cvars3d,cvars2d,nc3d,nc2d,clevels,ncdim,grdin_mean,no_inflate_flag,qsat) 
         end if
      endif
      deallocate(grdin_mean)

@@ -1940,7 +1940,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                      if (kx==187) obserr(2,k)=1.0
                      if (kx==181) obserr(2,k)=1.0
                      if (kx==183) obserr(2,k)=1.0
-                   !if (tqm(k) < lim_tqm) write (6,*) 'CSD - have q, no t'
+                     tqm(k) = 2 ! need for qsat calc
                 endif
               endif
               if (obs_is_sonde .and. qob ) then 

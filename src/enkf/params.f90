@@ -100,7 +100,7 @@ character(len=500),public :: datapath
 ! update is used.  If .false, a perturbed obs (stochastic) update
 ! is used.
 logical, public :: deterministic, sortinc, pseudo_rh, qobs_pseudo_rh, &
-                   varqc, huber, cliptracers, readin_localization
+                   varqc, huber, cliptracers, readin_localization, renorm_RH 
 logical, public :: lupp
 logical, public :: cnvw_option
 integer(i_kind),public ::  iassim_order,nlevs,nanals,numiter,&
@@ -275,7 +275,7 @@ namelist /nam_enkf/datestring,datapath,iassim_order,nvars,&
                    analpertwtnh_rtpp,analpertwtsh_rtpp,analpertwttr_rtpp,&
                    nlevs,nanals,saterrfact,univaroz,regional,use_gfs_nemsio,use_gfs_ncio,&
                    paoverpb_thresh,latbound,delat,pseudo_rh,qobs_pseudo_rh,numiter,biasvar,&
-                   lupd_satbiasc,cliptracers,simple_partition,adp_anglebc,angord,&
+                   lupd_satbiasc,cliptracers,simple_partition,adp_anglebc,angord,renorm_RH, &
                    newpc4pred,nmmb,nhr_anal,nhr_state, fhr_assim,nbackgrounds,nstatefields, &
                    save_inflation,nobsl_max,lobsdiag_forenkf,netcdf_diag,forecast_impact,&
                    letkf_flag,massbal_adjust,use_edges,emiss_bc,iseed_perturbed_obs,npefiles,&
@@ -388,6 +388,7 @@ paoverpb_thresh = 1.0_r_single! don't skip any obs
 iassim_order = 0
 ! use 'pseudo-rh' analysis variable, as in GSI.
 pseudo_rh = .false.
+renorm_RH = .false.
 ! divide qobs by forecast qsat, giving pseudo RH obs
 qobs_pseudo_rh = .true.
 ! if deterministic is true, use LETKF/EnSRF w/o perturbed obs.
@@ -582,6 +583,7 @@ if (modelspace_vloc) then
   lnsigcutoffpstr = 1.e30_r_single
 endif
 
+
 if (nanals <= numproc) then
    ! one ensemble member read in on each of first nanals tasks.
    ntasks_io = nanals
@@ -702,6 +704,8 @@ if (nproc == 0) then
    endif
 
 end if
+
+if (pseudo_RH==.false.) renorm_RH=.false.
 
 ! background forecast time for analysis
 nbackgrounds=0
