@@ -146,7 +146,7 @@
 
   ! some mpi gatherv calculations
   allocate(recvcounts(ionumproc))
-  allocate(displs(ionumproc))    
+  allocate(displs(ionumproc)) 
   do i=0, ionumproc-1
      recvcounts(i+1) = (lev_pe2(i) - lev_pe1(i)+1)*nlons*nlats
      displs(i+1) = ((lev_pe1(i)-1)*nlons*nlats)
