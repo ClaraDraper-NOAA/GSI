@@ -4106,7 +4106,6 @@
 
   end do backgroundloop ! loop over backgrounds to read in
   end do ensmemloop ! loop over ens members to read in
-  
   if (nproc == 0) then
        t2 = mpi_wtime()
        print *,'time in writeincrement atm_file on root',t2-t1,'secs'
