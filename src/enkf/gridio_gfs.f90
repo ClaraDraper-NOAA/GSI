@@ -364,7 +364,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -381,7 +381,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -409,7 +409,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -424,7 +424,7 @@
 
   ! surface pressure
   if (ps_ind > 0 .and. iope==0) then
-     call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
+    call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
   endif
 
   ! surface pressure tendency
@@ -448,7 +448,7 @@
         ! layer pressure from phillips vertical interolation (used for qsat
         ! calculation)
         ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
-                 (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
+                (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
         call copytogrdin(ug,pslg(:,k))
      end do
      if (pseudo_rh) then
@@ -470,10 +470,10 @@
               qi_coef        = max(zero,qi_coef)
               qi_coef        = min(one,qi_coef)    ! 0<=qi_coef<=1
               if (ql_ind > 0) then
-                 grdin(i,levels(ql_ind-1)+k,nb,ne) = cw(i,k)*(one-qi_coef)
+                grdin(i,levels(ql_ind-1)+k,nb,ne) = cw(i,k)*(one-qi_coef)
               endif
               if (qi_ind > 0) then
-                 grdin(i,levels(qi_ind-1)+k,nb,ne) = cw(i,k)*qi_coef
+                grdin(i,levels(qi_ind-1)+k,nb,ne) = cw(i,k)*qi_coef
               endif
            enddo
         enddo
@@ -481,181 +481,180 @@
   endif
 
   if (sst_ind > 0 .and. iope==0) then
-     grdin(:,levels(n3d)+sst_ind, nb,ne) = zero
+    grdin(:,levels(n3d)+sst_ind, nb,ne) = zero
   endif
 
- ! bring all the subdomains back to the main PE
- call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+  ! bring all the subdomains back to the main PE
+  call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
- deallocate(pressi,pslg)
- deallocate(psg)
- if (pst_ind > 0) deallocate(vmassdiv,pstend)
- call close_dataset(dset)
- call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+  deallocate(pressi,pslg)
+  deallocate(psg)
+  if (pst_ind > 0) deallocate(vmassdiv,pstend)
+  call close_dataset(dset)
+  call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
  end do backgroundloop ! loop over backgrounds to read in
 
  end if   !read_atm_file
 
 
-  if (read_sfc_file) then ! sfc read
-    ! print *,'paranc not supported for reading surface files'
-    ! call mpi_barrier(mpi_comm_world,ierr)
-    ! call mpi_finalize(ierr)
+ if (read_sfc_file) then ! sfc read
+   ! print *,'paranc not supported for reading surface files'
+   ! call mpi_barrier(mpi_comm_world,ierr)
+   ! call mpi_finalize(ierr)
 
-  ! loop through times and do the read
-    ne = 1
-    sfcbackgroundloop: do nb=1,ntimes
+ ! loop through times and do the read
+   ne = 1
+   sfcbackgroundloop: do nb=1,ntimes
 
-    write(charnanal,'(a3, i3.3)') 'mem', nanal
-    sfcfilename = trim(adjustl(datapath))//trim(adjustl(filesfcprefixes(nb)))//trim(charnanal)
-    if (use_gfs_ncio) then
-   !  dset_sfc = open_dataset(filenamesfc)
-      dset_sfc = open_dataset(sfcfilename, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
-      !londim = get_dim(dset,'grid_xt'); nlonsin = londim%len
-      !latdim = get_dim(dset,'grid_yt'); nlatsin = latdim%len
-    else
-      write(6,*)'READGRIDDATA_PNC sfc:  ***FATAL ERROR*** parallel read only supported for netCDF' , ' PROGRAM STOPS'
-      call mpi_barrier(mpi_comm_world,ierr)
-      call mpi_finalize(ierr)
-    end if
-    if ( reducedgrid ) then
-        write(6,*) "READGRIDDATA_PNC sfc: reducedgrid=T interpolation not valid for writing sfc files"
-        ! call stop2(22)
-        call mpi_barrier(mpi_comm_world,ierr)
-        call mpi_finalize(ierr)
-    endif
+   write(charnanal,'(a3, i3.3)') 'mem', nanal
+   sfcfilename = trim(adjustl(datapath))//trim(adjustl(filesfcprefixes(nb)))//trim(charnanal)
+   if (use_gfs_ncio) then
+  !  dset_sfc = open_dataset(filenamesfc)
+     dset_sfc = open_dataset(sfcfilename, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
+     !londim = get_dim(dset,'grid_xt'); nlonsin = londim%len
+     !latdim = get_dim(dset,'grid_yt'); nlatsin = latdim%len
+   else
+     write(6,*)'READGRIDDATA_PNC sfc:  ***FATAL ERROR*** parallel read only supported for netCDF' , ' PROGRAM STOPS'
+     call mpi_barrier(mpi_comm_world,ierr)
+     call mpi_finalize(ierr)
+   end if
+   if ( reducedgrid ) then
+       write(6,*) "READGRIDDATA_PNC sfc: reducedgrid=T interpolation not valid for writing sfc files"
+       ! call stop2(22)
+       call mpi_barrier(mpi_comm_world,ierr)
+       call mpi_finalize(ierr)
+   endif
 
-    ! land sfc DA variables
-    tmp2m_ind  = getindex(vars2d, 't2m')
-    spfh2m_ind = getindex(vars2d, 'q2m')
-    soilt1_ind = getindex(vars2d, 'st1')
-    slc1_ind = getindex(vars2d, 'sl1')
-    soilt2_ind = getindex(vars2d, 'st2')
-    slc2_ind = getindex(vars2d, 'sl2')
-    soilt3_ind = getindex(vars2d, 'st3')
-    slc3_ind = getindex(vars2d, 'sl3')
-    soilt4_ind = getindex(vars2d, 'st4')
-    slc4_ind = getindex(vars2d, 'sl4')
+   ! land sfc DA variables
+   tmp2m_ind  = getindex(vars2d, 't2m')
+   spfh2m_ind = getindex(vars2d, 'q2m')
+   soilt1_ind = getindex(vars2d, 'st1')
+   slc1_ind = getindex(vars2d, 'sl1')
+   soilt2_ind = getindex(vars2d, 'st2')
+   slc2_ind = getindex(vars2d, 'sl2')
+   soilt3_ind = getindex(vars2d, 'st3')
+   slc3_ind = getindex(vars2d, 'sl3')
+   soilt4_ind = getindex(vars2d, 'st4')
+   slc4_ind = getindex(vars2d, 'sl4')
 
-    ! read in sfc vars, if requested
-    if (tmp2m_ind > 0) then
-        call read_vardata(dset_sfc, 'tmp2m', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading tmp2m'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
-      !   if (tmp2m_ind > 0 .and. iope==0)
-      !      call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
-      !   endif
-    endif
-    if (spfh2m_ind > 0) then
-        call read_vardata(dset_sfc, 'spfh2m', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading spfh2m'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
-    endif
-    if (soilt1_ind > 0) then
-        call read_vardata(dset_sfc, 'soilt1', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soilt1'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
-    endif
-    if (soilt2_ind > 0) then
-        call read_vardata(dset_sfc, 'soilt2', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soilt2'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
-    endif
-    if (soilt3_ind > 0) then
-        call read_vardata(dset_sfc, 'soilt3', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soilt3'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
-    endif
-    if (soilt4_ind > 0) then
-        call read_vardata(dset_sfc, 'soilt4', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soilt2'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
-    endif
-    if (slc1_ind > 0) then
-        call read_vardata(dset_sfc, 'soill1', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soill1'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
-    endif
-    if (slc2_ind > 0) then
-        call read_vardata(dset_sfc, 'soill2', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soill2'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
-    endif
-    if (slc3_ind > 0) then
-        call read_vardata(dset_sfc, 'soill3', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soill3'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
-    endif
-    if (slc4_ind > 0) then
-        call read_vardata(dset_sfc, 'soill4', values_2d, errcode=iret)
-        if (iret /= 0) then
-                print *,'READGRIDDATA_PNC: error reading soill4'
-                call stop2(22)
-        endif
-        ug = reshape(values_2d,(/nlons*nlats/))
-      !   call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
-        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
-    endif
+   ! read in sfc vars, if requested
+   if (tmp2m_ind > 0) then
+       call read_vardata(dset_sfc, 'tmp2m', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading tmp2m'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
+     !   if (tmp2m_ind > 0 .and. iope==0)
+     !      call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
+     !   endif
+   endif
+   if (spfh2m_ind > 0) then
+       call read_vardata(dset_sfc, 'spfh2m', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading spfh2m'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
+   endif
+   if (soilt1_ind > 0) then
+       call read_vardata(dset_sfc, 'soilt1', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soilt1'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
+   endif
+   if (soilt2_ind > 0) then
+       call read_vardata(dset_sfc, 'soilt2', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soilt2'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
+   endif
+   if (soilt3_ind > 0) then
+       call read_vardata(dset_sfc, 'soilt3', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soilt3'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
+   endif
+   if (soilt4_ind > 0) then
+       call read_vardata(dset_sfc, 'soilt4', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soilt2'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
+   endif
+   if (slc1_ind > 0) then
+       call read_vardata(dset_sfc, 'soill1', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soill1'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
+   endif
+   if (slc2_ind > 0) then
+       call read_vardata(dset_sfc, 'soill2', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soill2'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
+   endif
+   if (slc3_ind > 0) then
+       call read_vardata(dset_sfc, 'soill3', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soill3'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
+   endif
+   if (slc4_ind > 0) then
+       call read_vardata(dset_sfc, 'soill4', values_2d, errcode=iret)
+       if (iret /= 0) then
+               print *,'READGRIDDATA_PNC: error reading soill4'
+               call stop2(22)
+       endif
+       ug = reshape(values_2d,(/nlons*nlats/))
+     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
+       if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
+   endif
 
-    ! bring all the subdomains back to the main PE
-    call mpi_barrier(iocomms(mem_pe(nproc)), iret)
-  
-    if (allocated(values_2d)) deallocate(values_2d)
+   ! bring all the subdomains back to the main PE
+   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+ 
+   if (allocated(values_2d)) deallocate(values_2d)
 
-    call close_dataset(dset_sfc)
+   call close_dataset(dset_sfc)
 
-    call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
-    end do sfcbackgroundloop ! loop over backgrounds to read in
+   end do sfcbackgroundloop ! loop over backgrounds to read in
 
-  end if   !if (read_sfc_file
-
+ end if   !if (read_sfc_file
 
   ! remove the sub communicators
   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
