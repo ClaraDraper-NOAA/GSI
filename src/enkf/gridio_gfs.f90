@@ -2275,7 +2275,6 @@
   character(len=nf90_max_name) :: time_units
   logical :: hasfield
   character(len=max_varname_length), dimension(n3d) :: no_vars3d
-  character(len=max_varname_length), dimension(n2d) :: no_vars2d
 
   real(r_kind) kap,kapr,kap1,clip
   real(r_single) compress_err
@@ -3771,7 +3770,7 @@
   real(r_double)  :: t1,t2
 
   call set_ncio_file_flags(vars3d, n3d, vars2d, n2d, write_sfc_file, write_atm_file)
-  
+
   use_full_hydro = .false.
   clip = tiny_r_kind
   read(datestring,*) iadateout
@@ -3779,11 +3778,8 @@
   ncstart = (/1, 1, 1/)
   nccount = (/nlons, nlats, nlevs/)
 
-
   if ( write_atm_file) then
-  
   if (nproc == 0) t1 = mpi_wtime()
-
   ne = 0
   ensmemloop: do nanal=nanal1,nanal2
   ne = ne + 1
@@ -4110,7 +4106,6 @@
 
   end do backgroundloop ! loop over backgrounds to read in
   end do ensmemloop ! loop over ens members to read in
-  
    if (nproc == 0) then
         t2 = mpi_wtime()
         print *,'time in writeincrement atm_file on root',t2-t1,'secs'
@@ -4120,7 +4115,6 @@
   if (write_sfc_file) then
 
      if (nproc == 0) t1 = mpi_wtime() 
-
      ne = 0
      sfcensmemloop: do nanal=nanal1,nanal2
      ne = ne + 1
@@ -4361,12 +4355,11 @@
      deallocate(inc2d,inc2dout)
 
   end do sfcbackgroundloop ! loop over backgrounds to read in
-  end do sfcensmemloop ! loop over ens members to read in
-  
-   if (nproc == 0) then
-        t2 = mpi_wtime()
-        print *,'time in writeincrement sfc_file on root',t2-t1,'secs'
-   endif
+  end do sfcensmemloop ! loop over ens members to read in 
+  if (nproc == 0) then
+       t2 = mpi_wtime()
+       print *,'time in writeincrement sfc_file on root',t2-t1,'secs'
+  endif
 
   endif ! write_sfc_file
 
@@ -4436,7 +4429,7 @@
                      soilt3varid, soilt4varid, slc1varid, slc2varid, &
                      slc3varid, slc4varid, maskvarid
   integer(i_kind) :: tmp2m_ind, spfh2m_ind, soilt1_ind, soilt2_ind,soilt3_ind, &
-                      soilt4_ind,slc1_ind, slc2_ind, slc3_ind, slc4_ind 
+                     soilt4_ind,slc1_ind, slc2_ind, slc3_ind, slc4_ind 
   integer(i_kind) :: iadateout
 
   ! fixed fields such as lat, lon, levs
