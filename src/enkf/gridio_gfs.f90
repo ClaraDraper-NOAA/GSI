@@ -4952,6 +4952,7 @@
   if (allocated(delzb)) deallocate(delzb)
   if (allocated(psges)) deallocate(psges)
 
+  !TODO: closing file 
   call nccheck_incr(nf90_close(ncid_out))
 
   end do backgroundloop ! loop over backgrounds to write out
