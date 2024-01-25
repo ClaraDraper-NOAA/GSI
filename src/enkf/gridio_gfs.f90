@@ -4602,8 +4602,8 @@
   if (iope==0) then
     ! levels
     do k=1,nlevs
-       levsout(k) = float(k)
-       ilevsout(k) = float(k)
+      levsout(k) = float(k)
+      ilevsout(k) = float(k)
     end do
     ilevsout(nlevs+1) = float(nlevs+1)
 
@@ -4616,7 +4616,7 @@
     call read_vardata(dsfg, 'grid_yt', values_1d, errcode=iret)
     ! latitudes
     do j=1,nlats
-       deglats(nlats-j+1) = values_1d(j)
+      deglats(nlats-j+1) = values_1d(j)
     end do
 
     call nccheck_incr(nf90_put_var(ncid_out, latvarid, deglats, &
