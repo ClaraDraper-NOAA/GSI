@@ -4502,9 +4502,9 @@
   write(charnanal,'(i3.3)') nanal
 
   if(no_inflate_flag) then
-     filenameout = trim(adjustl(datapath))//trim(adjustl(incfileprefixes(nb)))//"nimem"//charnanal
+    filenameout = trim(adjustl(datapath))//trim(adjustl(incfileprefixes(nb)))//"nimem"//charnanal
   else
-     filenameout = trim(adjustl(datapath))//trim(adjustl(incfileprefixes(nb)))//"mem"//charnanal
+    filenameout = trim(adjustl(datapath))//trim(adjustl(incfileprefixes(nb)))//"mem"//charnanal
   end if
   filenamein = trim(adjustl(datapath))//trim(adjustl(fgfileprefixes(nb)))//"mem"//charnanal
 
@@ -4575,9 +4575,9 @@
   qs_ind  = getindex(vars3d, 'qs')  ! QS (3D)
   qg_ind  = getindex(vars3d, 'qg')  ! QG (3D)
   pst_ind = getindex(vars2d, 'pst') ! Ps tendency (2D)   // equivalent of
-                                      ! old logical massbal_adjust, if non-zero
+                                    ! old logical massbal_adjust, if non-zero
   use_full_hydro = ( ql_ind > 0 .and. qi_ind > 0 .and. &
-                       qr_ind > 0 .and. qs_ind > 0 .and. qg_ind > 0 )
+                     qr_ind > 0 .and. qs_ind > 0 .and. qg_ind > 0 )
 
   dsfg = open_dataset(filenamein, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
   call read_attribute(dsfg, 'ak', values_1d,errcode=iret)
@@ -4600,43 +4600,43 @@
   enddo
 
   if (iope==0) then
-     ! levels
-     do k=1,nlevs
-        levsout(k) = float(k)
-        ilevsout(k) = float(k)
-     end do
-     ilevsout(nlevs+1) = float(nlevs+1)
+    ! levels
+    do k=1,nlevs
+       levsout(k) = float(k)
+       ilevsout(k) = float(k)
+    end do
+    ilevsout(nlevs+1) = float(nlevs+1)
 
-     ! longitudes
-     call read_vardata(dsfg, 'grid_xt', values_1d, errcode=iret)
-     deglons(:) = values_1d
-     call nccheck_incr(nf90_put_var(ncid_out, lonvarid, deglons, &
-                          start = (/1/), count = (/nlons/)))
+    ! longitudes
+    call read_vardata(dsfg, 'grid_xt', values_1d, errcode=iret)
+    deglons(:) = values_1d
+    call nccheck_incr(nf90_put_var(ncid_out, lonvarid, deglons, &
+                         start = (/1/), count = (/nlons/)))
 
-     call read_vardata(dsfg, 'grid_yt', values_1d, errcode=iret)
-     ! latitudes
-     do j=1,nlats
-        deglats(nlats-j+1) = values_1d(j)
-     end do
+    call read_vardata(dsfg, 'grid_yt', values_1d, errcode=iret)
+    ! latitudes
+    do j=1,nlats
+       deglats(nlats-j+1) = values_1d(j)
+    end do
 
-     call nccheck_incr(nf90_put_var(ncid_out, latvarid, deglats, &
-                          start = (/1/), count = (/nlats/)))
+    call nccheck_incr(nf90_put_var(ncid_out, latvarid, deglats, &
+                         start = (/1/), count = (/nlats/)))
 
-     ! write to file
-     call nccheck_incr(nf90_put_var(ncid_out, levvarid, sngl(levsout), &
-                       start = (/1/), count = (/nlevs/)))
-     ! pfull
-     call nccheck_incr(nf90_put_var(ncid_out, pfullvarid, sngl(levsout), &
-                       start = (/1/), count = (/nlevs/)))
-     ! ilev
-     call nccheck_incr(nf90_put_var(ncid_out, ilevvarid, sngl(ilevsout), &
-                       start = (/1/), count = (/nlevs+1/)))
-     ! hyai
-     call nccheck_incr(nf90_put_var(ncid_out, hyaivarid, sngl(ilevsout), &
-                       start = (/1/), count = (/nlevs+1/)))
-     ! hybi
-     call nccheck_incr(nf90_put_var(ncid_out, hybivarid, sngl(ilevsout), &
-                       start = (/1/), count = (/nlevs+1/)))
+    ! write to file
+    call nccheck_incr(nf90_put_var(ncid_out, levvarid, sngl(levsout), &
+                      start = (/1/), count = (/nlevs/)))
+    ! pfull
+    call nccheck_incr(nf90_put_var(ncid_out, pfullvarid, sngl(levsout), &
+                      start = (/1/), count = (/nlevs/)))
+    ! ilev
+    call nccheck_incr(nf90_put_var(ncid_out, ilevvarid, sngl(ilevsout), &
+                      start = (/1/), count = (/nlevs+1/)))
+    ! hyai
+    call nccheck_incr(nf90_put_var(ncid_out, hyaivarid, sngl(ilevsout), &
+                      start = (/1/), count = (/nlevs+1/)))
+    ! hybi
+    call nccheck_incr(nf90_put_var(ncid_out, hybivarid, sngl(ilevsout), &
+                      start = (/1/), count = (/nlevs+1/)))
 
   end if
 
@@ -4649,16 +4649,16 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (u_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(u_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(u_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
   end do
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('u_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, uvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! v increment
   do k=lev_pe1(iope), lev_pe2(iope)
@@ -4666,21 +4666,21 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (u_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(v_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(v_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
   end do
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('v_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, vvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! delp increment
   psinc(:) = zero
   if (ps_ind > 0) then
-     call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),psinc)
+    call copyfromgrdin(grdin(:,levels(n3d) + ps_ind,nb,ne),psinc)
   endif
   do k=lev_pe1(iope), lev_pe2(iope)
      krev = nlevs-k+1
@@ -4690,11 +4690,11 @@
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
   end do
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('delp_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, delpvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! sphum increment
   allocate(tmp(nlons,nlats,nccount(3)),tv(nlons,nlats,nccount(3)),q(nlons,nlats,nccount(3)))
@@ -4709,7 +4709,7 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (q_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(q_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(q_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
      qanl(:,:,ki) = q(:,:,ki) + inc3d(:,:,ki)
@@ -4717,11 +4717,11 @@
   if (cliptracers)  where (qanl < clip) qanl = clip
   inc3d = qanl - q
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('sphum_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, sphumvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! t increment
   call read_vardata(dsfg, 'tmp', tmp, ncstart=ncstart, nccount=nccount, errcode=iret)
@@ -4735,7 +4735,7 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (tv_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(tv_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(tv_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
      tvanl(:,:,ki) = tv(:,:,ki) + inc3d(:,:,ki)
@@ -4743,11 +4743,11 @@
   end do
   inc3d = tmpanl - tmp
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('T_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, tvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! delz increment
   inc3d(:,:,:) = zero
@@ -4775,11 +4775,11 @@
      end do
   end if
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('delz_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, delzvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! o3mr increment
   do k=lev_pe1(iope), lev_pe2(iope)
@@ -4787,16 +4787,16 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (oz_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(oz_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(oz_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
   end do
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('o3mr_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, o3varid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! For hydrometeors, following the treatment for specific humidity increment
   ! Need to make sure the analysis value is not negative
@@ -4854,18 +4854,18 @@
 
   ! output ql increment 
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('liq_wat_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, liqwatvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
   ! output qi increment
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d2(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d2(:,j,:)
   end do
   if (should_zero_increments_for('icmr_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, icvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! rwmr increment
   call read_vardata(dsfg, 'rwmr', q, ncstart=ncstart, nccount=nccount, errcode=iret)
@@ -4878,7 +4878,7 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (qr_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(qr_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(qr_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
      qanl(:,:,ki) = q(:,:,ki) + inc3d(:,:,ki)
@@ -4886,11 +4886,11 @@
   if (cliptracers)  where (qanl < qcmin) qanl = qcmin
   inc3d = qanl - q   ! updated rwmr increment
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('rwmr_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, rwmrvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! snmr increment
   call read_vardata(dsfg, 'snmr', q, ncstart=ncstart, nccount=nccount, errcode=iret)
@@ -4903,7 +4903,7 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (qs_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(qs_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(qs_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
      qanl(:,:,ki) = q(:,:,ki) + inc3d(:,:,ki)
@@ -4911,11 +4911,11 @@
   if (cliptracers)  where (qanl < qcmin) qanl = qcmin
   inc3d = qanl - q   ! updated snmr increment
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('snmr_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, snmrvarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   ! grle increment
   call read_vardata(dsfg, 'grle', q, ncstart=ncstart, nccount=nccount, errcode=iret)
@@ -4928,7 +4928,7 @@
      ki = k - lev_pe1(iope) + 1
      inc(:) = zero
      if (qg_ind > 0) then
-        call copyfromgrdin(grdin(:,levels(qg_ind-1) + krev,nb,ne),inc)
+       call copyfromgrdin(grdin(:,levels(qg_ind-1) + krev,nb,ne),inc)
      endif
      inc3d(:,:,ki) = reshape(inc,(/nlons,nlats/))
      qanl(:,:,ki) = q(:,:,ki) + inc3d(:,:,ki)
@@ -4936,11 +4936,11 @@
   if (cliptracers)  where (qanl < qcmin) qanl = qcmin
   inc3d = qanl - q   ! updated grle increment
   do j=1,nlats
-     inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
+    inc3dout(:,nlats-j+1,:) = inc3d(:,j,:)
   end do
   if (should_zero_increments_for('grle_inc')) inc3dout = zero
   call nccheck_incr(nf90_put_var(ncid_out, grlevarid, sngl(inc3dout), &
-                       start = ncstart, count = nccount))
+                      start = ncstart, count = nccount))
 
   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
