@@ -81,7 +81,7 @@
   character(len=7) charnanal
 
   real(r_kind) :: kap,kapr,kap1,clip,qi_coef
-  
+
   real(r_kind), allocatable, dimension(:,:)     :: vmassdiv
   real(r_single), allocatable, dimension(:,:)   :: pressi,pslg,values_2d
   real(r_kind), dimension(nlons*nlats)          :: ug,vg
