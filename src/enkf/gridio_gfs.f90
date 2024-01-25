@@ -35,7 +35,6 @@
 !               a required input for EFSO calculations
 !   2019-03-13  Add precipitation components
 !   2019-07-10  Add convective clouds
-
 !   2022-07-21  Draper: added read/write for sfc file for nc io (writeincrements, and readgridata)
 !
 ! attributes:
@@ -82,6 +81,7 @@
   character(len=7) charnanal
 
   real(r_kind) :: kap,kapr,kap1,clip,qi_coef
+  
   real(r_kind), allocatable, dimension(:,:)     :: vmassdiv
   real(r_single), allocatable, dimension(:,:)   :: pressi,pslg,values_2d
   real(r_kind), dimension(nlons*nlats)          :: ug,vg
@@ -118,13 +118,6 @@
 
   call set_ncio_file_flags(vars3d, n3d, vars2d, n2d, read_sfc_file, read_atm_file)
 
-   ! if (read_sfc_file) then
-   !    print *,'paranc not supported for reading surface files'
-   !    call mpi_barrier(mpi_comm_world,ierr)
-   !    call mpi_finalize(ierr)
-   ! endif
-
-
   ! figure out what member to read and do MPI sub-communicator things
   allocate(mem_pe(0:numproc-1))
   allocate(iocomms(nanals))
@@ -136,7 +129,6 @@
   end do
   nanal = mem_pe(nproc)
 
-! nproc=rank, numproc=size, iope=iocomrank, ionumproc=iocomsize
   call mpi_comm_split(mpi_comm_world, mem_pe(nproc), nproc, iocomms(mem_pe(nproc)), iret)
   call mpi_comm_rank(iocomms(mem_pe(nproc)), iope, iret)
   call mpi_comm_size(iocomms(mem_pe(nproc)), ionumproc, iret)
@@ -155,7 +147,7 @@
 
   ! some mpi gatherv calculations
   allocate(recvcounts(ionumproc))
-  allocate(displs(ionumproc))     ! offset
+  allocate(displs(ionumproc))    
   do i=0, ionumproc-1
      recvcounts(i+1) = (lev_pe2(i) - lev_pe1(i)+1)*nlons*nlats
      displs(i+1) = ((lev_pe1(i)-1)*nlons*nlats)
@@ -169,7 +161,6 @@
 
   write(charnanal,'(a3, i3.3)') 'mem', nanal
   filename = trim(adjustl(datapath))//trim(adjustl(fileprefixes(nb)))//trim(charnanal)
-  !sfcfilename = trim(adjustl(datapath))//trim(adjustl(filesfcprefixes(nb)))//trim(charnanal)
   if (use_gfs_ncio) then
      dset = open_dataset(filename, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
      londim = get_dim(dset,'grid_xt'); nlonsin = londim%len
@@ -209,301 +200,301 @@
   ! The following line will be removed after testing
   use_full_hydro = .false.
 
-   if (.not. isinitialized) call init_spec_vars(nlons,nlats,ntrunc,4)
+  if (.not. isinitialized) call init_spec_vars(nlons,nlats,ntrunc,4)
 
-   allocate(pressi(nlons*nlats,nlevs+1))
-   allocate(pslg(npts,nlevs))
-   allocate(psg(nlons*nlats))
-   if (pst_ind > 0) allocate(vmassdiv(nlons*nlats,nlevs),pstend(nlons*nlats))
+  allocate(pressi(nlons*nlats,nlevs+1))
+  allocate(pslg(npts,nlevs))
+  allocate(psg(nlons*nlats))
+  if (pst_ind > 0) allocate(vmassdiv(nlons*nlats,nlevs),pstend(nlons*nlats))
 
-   call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
-   if (iret /= 0) then
-      write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading ps, iret= ',iret,' PROGRAM STOPS'
-      call stop2(31)
-   endif
-   psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
-   call read_attribute(dset, 'ak', ak)
-   call read_attribute(dset, 'bk', bk)
-   if (nanal .eq. 1 .and. iope==0) then
-      print *,'time level ',nb
-      print *,'---------------'
-   endif
-   ! pressure at interfaces
-   do k=1,nlevs+1
-      ! k=1 in ak,bk is model top
-      pressi(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*psg
-      if (nanal .eq. 1 .and. iope==0) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
-   enddo
-   deallocate(ak,bk,values_2d)
+  call read_vardata(dset, 'pressfc', values_2d,errcode=iret)
+  if (iret /= 0) then
+     write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading ps, iret= ',iret,' PROGRAM STOPS'
+     call stop2(31)
+  endif
+  psg = 0.01_r_kind*reshape(values_2d,(/nlons*nlats/))
+  call read_attribute(dset, 'ak', ak)
+  call read_attribute(dset, 'bk', bk)
+  if (nanal .eq. 1 .and. iope==0) then
+     print *,'time level ',nb
+     print *,'---------------'
+  endif
+  ! pressure at interfaces
+  do k=1,nlevs+1
+     ! k=1 in ak,bk is model top
+     pressi(:,k) = 0.01_r_kind*ak(nlevs-k+2)+bk(nlevs-k+2)*psg
+     if (nanal .eq. 1 .and. iope==0) print *,'netcdf, min/max pressi',k,minval(pressi(:,k)),maxval(pressi(:,k))
+  enddo
+  deallocate(ak,bk,values_2d)
 
-   call read_vardata(dset, 'ugrd', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-   if (iret /= 0) then
-      write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading ugrd, iret= ',iret,' PROGRAM STOPS'
-      call stop2(22)
-   endif
-   call read_vardata(dset, 'vgrd', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-   if (iret /= 0) then
-      write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading vgrd, iret= ',iret,' PROGRAM STOPS'
-      call stop2(23)
-   endif
-   call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                     mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-   call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
-                     mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-   if (iope==0) then
-      do k=1,nlevs
-         krev = nlevs-k+1
-         ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-         vg = reshape(vg3d_0(:,:,krev),(/nlons*nlats/))
-         if (u_ind > 0) call copytogrdin(ug,grdin(:,levels(u_ind-1) + k,nb,ne))
-         if (v_ind > 0) call copytogrdin(vg,grdin(:,levels(v_ind-1) + k,nb,ne))
-         ! calculate vertical integral of mass flux div (ps tendency)
-         ! this variable is analyzed in order to enforce mass balance in the analysis
-         if (pst_ind > 0) then
-            krev = nlevs-k+1
-            ug = ug*(pressi(:,krev)-pressi(:,krev+1))
-            vg = vg*(pressi(:,krev)-pressi(:,krev+1))
-            call sptezv_s(divspec,vrtspec,ug,vg,-1) ! u,v to div,vrt
-            call sptez_s(divspec,vmassdiv(:,krev),1) ! divspec to divgrd
-         endif
-      enddo
-   end if
-   call read_vardata(dset,'tmp', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-   if (iret /= 0) then
-      write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading tmp, iret= ',iret,' PROGRAM STOPS'
-      call stop2(24)
-   endif
-   call read_vardata(dset,'spfh', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-   if (iret /= 0) then
-      write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading spfh, iret= ',iret,' PROGRAM STOPS'
-      call stop2(25)
-   endif
-   call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                     mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-   call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
-                     mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-   if (iope==0) then
-      do k=1,nlevs
-         krev = nlevs-k+1
-         ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-         vg = reshape(vg3d_0(:,:,krev),(/nlons*nlats/))
-         if (tsen_ind > 0) call copytogrdin(ug,grdin(:,levels(tsen_ind-1)+k,nb,ne))
-         call copytogrdin(vg, q(:,k))
-         ug = ug * ( 1.0 + fv*vg ) ! convert T to Tv
-         call copytogrdin(ug,tv(:,k))
-         if (tv_ind > 0)   grdin(:,levels(tv_ind-1)+k,nb,ne) = tv(:,k)
-         if (q_ind > 0)    grdin(:,levels( q_ind-1)+k,nb,ne) =  q(:,k)
-      end do
-   end if
+  call read_vardata(dset, 'ugrd', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+  if (iret /= 0) then
+     write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading ugrd, iret= ',iret,' PROGRAM STOPS'
+     call stop2(22)
+  endif
+  call read_vardata(dset, 'vgrd', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+  if (iret /= 0) then
+     write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading vgrd, iret= ',iret,' PROGRAM STOPS'
+     call stop2(23)
+  endif
+  call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+  call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
+                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+  if (iope==0) then
+     do k=1,nlevs
+        krev = nlevs-k+1
+        ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+        vg = reshape(vg3d_0(:,:,krev),(/nlons*nlats/))
+        if (u_ind > 0) call copytogrdin(ug,grdin(:,levels(u_ind-1) + k,nb,ne))
+        if (v_ind > 0) call copytogrdin(vg,grdin(:,levels(v_ind-1) + k,nb,ne))
+        ! calculate vertical integral of mass flux div (ps tendency)
+        ! this variable is analyzed in order to enforce mass balance in the analysis
+        if (pst_ind > 0) then
+           krev = nlevs-k+1
+           ug = ug*(pressi(:,krev)-pressi(:,krev+1))
+           vg = vg*(pressi(:,krev)-pressi(:,krev+1))
+           call sptezv_s(divspec,vrtspec,ug,vg,-1) ! u,v to div,vrt
+           call sptez_s(divspec,vmassdiv(:,krev),1) ! divspec to divgrd
+        endif
+     enddo
+  end if
+  call read_vardata(dset,'tmp', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+  if (iret /= 0) then
+     write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading tmp, iret= ',iret,' PROGRAM STOPS'
+     call stop2(24)
+  endif
+  call read_vardata(dset,'spfh', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+  if (iret /= 0) then
+     write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading spfh, iret= ',iret,' PROGRAM STOPS'
+     call stop2(25)
+  endif
+  call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+  call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
+                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+  if (iope==0) then
+     do k=1,nlevs
+        krev = nlevs-k+1
+        ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+        vg = reshape(vg3d_0(:,:,krev),(/nlons*nlats/))
+        if (tsen_ind > 0) call copytogrdin(ug,grdin(:,levels(tsen_ind-1)+k,nb,ne))
+        call copytogrdin(vg, q(:,k))
+        ug = ug * ( 1.0 + fv*vg ) ! convert T to Tv
+        call copytogrdin(ug,tv(:,k))
+        if (tv_ind > 0)   grdin(:,levels(tv_ind-1)+k,nb,ne) = tv(:,k)
+        if (q_ind > 0)    grdin(:,levels( q_ind-1)+k,nb,ne) =  q(:,k)
+     end do
+  end if
 
-   if (oz_ind > 0) then
-      call read_vardata(dset, 'o3mr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-      if (iret /= 0) then
-         write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading o3mr, iret= ',iret,' PROGRAM STOPS'
-         call stop2(26)
-      endif
-      if (cliptracers)  where (ug3d < clip) ug3d = clip
-      call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                        mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-      if (iope==0) then
-         do k=1,nlevs
-            krev = nlevs-k+1
-            ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-            call copytogrdin(ug,grdin(:,levels(oz_ind-1)+k,nb,ne))
-         end do
-      end if
-   endif
-   ! Read in hydrometeor fields based on control/state variables listed in anavinfo table 
-   if (use_full_hydro) then
-      if(ql_ind > 0) then
-         call read_vardata(dset, 'clwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading clwmr, iret= ',iret,' PROGRAM STOPS'
-            call stop2(26)
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,grdin(:,levels(ql_ind-1)+k,nb,ne))
-            end do
-         end if
-      endif
-      if(qi_ind > 0) then
-         call read_vardata(dset, 'icmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading icmr, iret= ',iret,' PROGRAM STOPS'
-            call stop2(26)
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,grdin(:,levels(qi_ind-1)+k,nb,ne))
-            end do
-         end if
-      endif
-      if(qr_ind > 0) then
-         call read_vardata(dset, 'rwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading rwmr, iret= ',iret,' PROGRAM STOPS'
-            call stop2(26)
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,grdin(:,levels(qr_ind-1)+k,nb,ne))
-            end do
-         end if
-      endif
-      if(qs_ind > 0) then
-         call read_vardata(dset, 'snmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading snmr, iret= ',iret,' PROGRAM STOPS'
-            call stop2(26)
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,grdin(:,levels(qs_ind-1)+k,nb,ne))
-            end do
-         end if
-      endif
-      if(qg_ind > 0) then
-         call read_vardata(dset, 'grle', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading grle, iret= ',iret,' PROGRAM STOPS'
-            call stop2(26)
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,grdin(:,levels(qg_ind-1)+k,nb,ne))
-            end do
-         end if
-      endif
-   else
-      ! Handle non-precipiting hydrometeors 
-      ! if control or state variable is cw, make sure combine background ql and qi to cw
-      if (cw_ind > 0 .or. ql_ind > 0 .or. qi_ind > 0) then
-         call read_vardata(dset, 'clwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-         if (iret /= 0) then
-            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading clwmr, iret= ',iret,' PROGRAM STOPS'
-            call stop2(27)
-         endif
-         if (imp_physics == 11) then
-            call read_vardata(dset, 'icmr', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-            if (iret /= 0) then
-               write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading icmr, iret= ',iret,' PROGRAM STOPS'
-               call stop2(28)
-            endif
-            ug3d = ug3d + vg3d
-         endif
-         if (cliptracers)  where (ug3d < clip) ug3d = clip
-         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                           mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
-         if (iope==0) then
-            do k=1,nlevs
-               krev = nlevs-k+1
-               ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
-               call copytogrdin(ug,cw(:,k))
-               if (cw_ind > 0) grdin(:,levels(cw_ind-1)+k,nb,ne) = cw(:,k)
-            end do
-         end if
-      endif
-   endif
-   deallocate(ug3d,vg3d)
+  if (oz_ind > 0) then
+     call read_vardata(dset, 'o3mr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+     if (iret /= 0) then
+        write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading o3mr, iret= ',iret,' PROGRAM STOPS'
+        call stop2(26)
+     endif
+     if (cliptracers)  where (ug3d < clip) ug3d = clip
+     call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                       mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+     if (iope==0) then
+        do k=1,nlevs
+           krev = nlevs-k+1
+           ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+           call copytogrdin(ug,grdin(:,levels(oz_ind-1)+k,nb,ne))
+        end do
+     end if
+  endif
+  ! Read in hydrometeor fields based on control/state variables listed in anavinfo table 
+  if (use_full_hydro) then
+     if(ql_ind > 0) then
+        call read_vardata(dset, 'clwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading clwmr, iret= ',iret,' PROGRAM STOPS'
+           call stop2(26)
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,grdin(:,levels(ql_ind-1)+k,nb,ne))
+           end do
+        end if
+     endif
+     if(qi_ind > 0) then
+        call read_vardata(dset, 'icmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading icmr, iret= ',iret,' PROGRAM STOPS'
+           call stop2(26)
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,grdin(:,levels(qi_ind-1)+k,nb,ne))
+           end do
+        end if
+     endif
+     if(qr_ind > 0) then
+        call read_vardata(dset, 'rwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading rwmr, iret= ',iret,' PROGRAM STOPS'
+           call stop2(26)
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,grdin(:,levels(qr_ind-1)+k,nb,ne))
+           end do
+        end if
+     endif
+     if(qs_ind > 0) then
+        call read_vardata(dset, 'snmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading snmr, iret= ',iret,' PROGRAM STOPS'
+           call stop2(26)
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,grdin(:,levels(qs_ind-1)+k,nb,ne))
+           end do
+        end if
+     endif
+     if(qg_ind > 0) then
+        call read_vardata(dset, 'grle', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading grle, iret= ',iret,' PROGRAM STOPS'
+           call stop2(26)
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,grdin(:,levels(qg_ind-1)+k,nb,ne))
+           end do
+        end if
+     endif
+  else
+     ! Handle non-precipiting hydrometeors 
+     ! if control or state variable is cw, make sure combine background ql and qi to cw
+     if (cw_ind > 0 .or. ql_ind > 0 .or. qi_ind > 0) then
+        call read_vardata(dset, 'clwmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+        if (iret /= 0) then
+           write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading clwmr, iret= ',iret,' PROGRAM STOPS'
+           call stop2(27)
+        endif
+        if (imp_physics == 11) then
+           call read_vardata(dset, 'icmr', vg3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+           if (iret /= 0) then
+              write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading icmr, iret= ',iret,' PROGRAM STOPS'
+              call stop2(28)
+           endif
+           ug3d = ug3d + vg3d
+        endif
+        if (cliptracers)  where (ug3d < clip) ug3d = clip
+        call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
+                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+        if (iope==0) then
+           do k=1,nlevs
+              krev = nlevs-k+1
+              ug = reshape(ug3d_0(:,:,krev),(/nlons*nlats/))
+              call copytogrdin(ug,cw(:,k))
+              if (cw_ind > 0) grdin(:,levels(cw_ind-1)+k,nb,ne) = cw(:,k)
+           end do
+        end if
+     endif
+  endif
+  deallocate(ug3d,vg3d)
 
-   ! surface pressure
-   if (ps_ind > 0 .and. iope==0) then
-      call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
-   endif
+  ! surface pressure
+  if (ps_ind > 0 .and. iope==0) then
+     call copytogrdin(psg,grdin(:,levels(n3d) + ps_ind,nb,ne))
+  endif
 
-   ! surface pressure tendency
-   if (pst_ind > 0 .and. iope==0) then
-      pstend = sum(vmassdiv,2)
-      if (nanal .eq. 1 .and. iope==0) &
-      print *,nanal,'min/max first-guess ps tend',minval(pstend),maxval(pstend)
-      call copytogrdin(pstend,grdin(:,levels(n3d) + pst_ind,nb,ne))
-   endif
+  ! surface pressure tendency
+  if (pst_ind > 0 .and. iope==0) then
+     pstend = sum(vmassdiv,2)
+     if (nanal .eq. 1 .and. iope==0) &
+     print *,nanal,'min/max first-guess ps tend',minval(pstend),maxval(pstend)
+     call copytogrdin(pstend,grdin(:,levels(n3d) + pst_ind,nb,ne))
+  endif
 
-   if (iope==0) then
-      do k=1,nlevs
-         ! pressure at bottom of layer interface (for gps jacobian, see prsltmp in setupbend.f90)
-         if (prse_ind > 0) then
-            ug(:) = pressi(:,k)
-            call copytogrdin(ug,pslg(:,k))
-            ! Jacobian for gps in pressure is saved in different units in GSI; need to
-            ! multiply pressure by 0.1
-            grdin(:,levels(prse_ind-1)+k,nb,ne) = 0.1*pslg(:,k)
-         endif
-         ! layer pressure from phillips vertical interolation (used for qsat
-         ! calculation)
-         ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
-                  (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
-         call copytogrdin(ug,pslg(:,k))
-      end do
-      if (pseudo_rh) then
-         call genqsat1(q,qsat(:,:,nb,ne),pslg,tv,ice,npts,nlevs)
-      else
-         qsat(:,:,nb,ne) = 1._r_double
-      end if
-   end if
+  if (iope==0) then
+     do k=1,nlevs
+        ! pressure at bottom of layer interface (for gps jacobian, see prsltmp in setupbend.f90)
+        if (prse_ind > 0) then
+           ug(:) = pressi(:,k)
+           call copytogrdin(ug,pslg(:,k))
+           ! Jacobian for gps in pressure is saved in different units in GSI; need to
+           ! multiply pressure by 0.1
+           grdin(:,levels(prse_ind-1)+k,nb,ne) = 0.1*pslg(:,k)
+        endif
+        ! layer pressure from phillips vertical interolation (used for qsat
+        ! calculation)
+        ug(:) = ((pressi(:,k)**kap1-pressi(:,k+1)**kap1)/&
+                 (kap1*(pressi(:,k)-pressi(:,k+1))))**kapr
+        call copytogrdin(ug,pslg(:,k))
+     end do
+     if (pseudo_rh) then
+        call genqsat1(q,qsat(:,:,nb,ne),pslg,tv,ice,npts,nlevs)
+     else
+        qsat(:,:,nb,ne) = 1._r_double
+     end if
+  end if
 
-   ! cloud derivatives
-   ! Currently, we do not let precipiation to affect the enkf analysis  
-   ! The following line will be removed after testing
-   use_full_hydro = .true.
-   if (.not. use_full_hydro .and. iope==0) then
-      if (ql_ind > 0 .or. qi_ind > 0) then
-         do k=1,nlevs
-            do i = 1, npts
-               qi_coef        = -r0_05*(tv(i,k)/(one+fv*q(i,k))-t0c)
-               qi_coef        = max(zero,qi_coef)
-               qi_coef        = min(one,qi_coef)    ! 0<=qi_coef<=1
-               if (ql_ind > 0) then
-                  grdin(i,levels(ql_ind-1)+k,nb,ne) = cw(i,k)*(one-qi_coef)
-               endif
-               if (qi_ind > 0) then
-                  grdin(i,levels(qi_ind-1)+k,nb,ne) = cw(i,k)*qi_coef
-               endif
-            enddo
-         enddo
-      endif
-   endif
+  ! cloud derivatives
+  ! Currently, we do not let precipiation to affect the enkf analysis  
+  ! The following line will be removed after testing
+  use_full_hydro = .true.
+  if (.not. use_full_hydro .and. iope==0) then
+     if (ql_ind > 0 .or. qi_ind > 0) then
+        do k=1,nlevs
+           do i = 1, npts
+              qi_coef        = -r0_05*(tv(i,k)/(one+fv*q(i,k))-t0c)
+              qi_coef        = max(zero,qi_coef)
+              qi_coef        = min(one,qi_coef)    ! 0<=qi_coef<=1
+              if (ql_ind > 0) then
+                 grdin(i,levels(ql_ind-1)+k,nb,ne) = cw(i,k)*(one-qi_coef)
+              endif
+              if (qi_ind > 0) then
+                 grdin(i,levels(qi_ind-1)+k,nb,ne) = cw(i,k)*qi_coef
+              endif
+           enddo
+        enddo
+     endif
+  endif
 
-   if (sst_ind > 0 .and. iope==0) then
-      grdin(:,levels(n3d)+sst_ind, nb,ne) = zero
-   endif
+  if (sst_ind > 0 .and. iope==0) then
+     grdin(:,levels(n3d)+sst_ind, nb,ne) = zero
+  endif
 
-  ! bring all the subdomains back to the main PE
-  call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+ ! bring all the subdomains back to the main PE
+ call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
-  deallocate(pressi,pslg)
-  deallocate(psg)
-  if (pst_ind > 0) deallocate(vmassdiv,pstend)
-  call close_dataset(dset)
-  call mpi_barrier(iocomms(mem_pe(nproc)), iret)
+ deallocate(pressi,pslg)
+ deallocate(psg)
+ if (pst_ind > 0) deallocate(vmassdiv,pstend)
+ call close_dataset(dset)
+ call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
-  end do backgroundloop ! loop over backgrounds to read in
+ end do backgroundloop ! loop over backgrounds to read in
 
  end if   !read_atm_file
 
