@@ -4954,7 +4954,7 @@
 
   call nccheck_incr(nf90_close(ncid_out))
 
-  end do backgroundloop ! loop over backgrounds to write out  
+  end do backgroundloop ! loop over backgrounds to write out
   if (nproc == 0) then
        t2 = mpi_wtime()
        print *,'time in writeincrement_pnc atm_file on root',t2-t1,'secs'
