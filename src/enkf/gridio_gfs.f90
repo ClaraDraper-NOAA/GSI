@@ -4355,7 +4355,7 @@
      deallocate(inc2d,inc2dout)
 
   end do sfcbackgroundloop ! loop over backgrounds to read in
-  end do sfcensmemloop ! loop over ens members to read in 
+  end do sfcensmemloop ! loop over ens members to read in
   if (nproc == 0) then
        t2 = mpi_wtime()
        print *,'time in writeincrement sfc_file on root',t2-t1,'secs'
