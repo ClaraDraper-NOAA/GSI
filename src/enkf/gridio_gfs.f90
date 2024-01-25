@@ -494,7 +494,7 @@
   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
 
- end do backgroundloop ! loop over backgrounds to read in
+  end do backgroundloop ! loop over backgrounds to read in
 
  end if   !read_atm_file
 
