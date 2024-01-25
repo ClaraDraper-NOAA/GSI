@@ -1255,14 +1255,13 @@
   deallocate(pressi,pslg)
   deallocate(psg)
   if (pst_ind > 0) deallocate(vmassdiv,pstend)
-
   endif ! read_atm_file
 
   if (use_gfs_nemsio) call nemsio_close(gfile,iret=iret)
   if (use_gfs_ncio) call close_dataset(dset)
   if (use_gfs_nemsio) call nemsio_close(gfilesfc,iret=iret)
 
-  if ( read_sfc_file ) then ! sfc read
+  if ( read_sfc_file ) then
 
      if ( .not.  use_gfs_ncio ) then
         write(6,*) 'griddio/griddata for sfc update vars only coded for nc io'
