@@ -238,9 +238,9 @@
      call stop2(23)
   endif
   call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                   mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
   call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
-                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                   mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
   if (iope==0) then
      do k=1,nlevs
         krev = nlevs-k+1
@@ -270,9 +270,9 @@
      call stop2(25)
   endif
   call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                   mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
   call mpi_gatherv(vg3d, recvcounts(iope+1), mpi_real4, vg3d_0, recvcounts, displs,&
-                    mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                   mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
   if (iope==0) then
      do k=1,nlevs
         krev = nlevs-k+1
@@ -295,7 +295,7 @@
      endif
      if (cliptracers)  where (ug3d < clip) ug3d = clip
      call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                       mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                      mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
      if (iope==0) then
         do k=1,nlevs
            krev = nlevs-k+1
@@ -314,7 +314,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -331,7 +331,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -348,7 +348,7 @@
         endif
         if (cliptracers)  where (ug3d < clip) ug3d = clip
         call mpi_gatherv(ug3d, recvcounts(iope+1), mpi_real4, ug3d_0, recvcounts, displs,&
-                          mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
+                         mpi_real4, 0, iocomms(mem_pe(nproc)),iret)
         if (iope==0) then
            do k=1,nlevs
               krev = nlevs-k+1
@@ -358,8 +358,8 @@
         end if
      endif
      if(qs_ind > 0) then
-        call read_vardata(dset, 'snmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
-        if (iret /= 0) then
+       call read_vardata(dset, 'snmr', ug3d, ncstart=ncstart, nccount=nccount, errcode=iret)
+       if (iret /= 0) then
            write(6,*)'READGRIDDATA_PNC:  ***FATAL ERROR*** reading snmr, iret= ',iret,' PROGRAM STOPS'
            call stop2(26)
         endif
