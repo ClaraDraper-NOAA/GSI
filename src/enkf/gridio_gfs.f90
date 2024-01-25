@@ -1471,7 +1471,6 @@
         if (nproc == 0) write(6,*) 'gridio/writegriddata_pnc: not coded to write sfc analysis, will write increment for sfc fields'
         no_vars3d=''
         call writeincrement_pnc(no_vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag)
-      !   call writeincrement(nanal1,nanal2,no_vars3d,vars2d,n3d,n2d,levels,ndim,grdin,no_inflate_flag)
   endif  
 
   nocompress = .true.
