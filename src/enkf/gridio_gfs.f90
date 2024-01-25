@@ -497,20 +497,14 @@
 
  end if   !read_atm_file
 
-
  if (read_sfc_file) then ! sfc read
-   ! print *,'paranc not supported for reading surface files'
-   ! call mpi_barrier(mpi_comm_world,ierr)
-   ! call mpi_finalize(ierr)
-
- ! loop through times and do the read
+   ! loop through times and do the read
    ne = 1
    sfcbackgroundloop: do nb=1,ntimes
-
+   
    write(charnanal,'(a3, i3.3)') 'mem', nanal
    sfcfilename = trim(adjustl(datapath))//trim(adjustl(filesfcprefixes(nb)))//trim(charnanal)
    if (use_gfs_ncio) then
-  !  dset_sfc = open_dataset(filenamesfc)
      dset_sfc = open_dataset(sfcfilename, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
      !londim = get_dim(dset,'grid_xt'); nlonsin = londim%len
      !latdim = get_dim(dset,'grid_yt'); nlatsin = latdim%len
@@ -521,7 +515,6 @@
    end if
    if ( reducedgrid ) then
        write(6,*) "READGRIDDATA_PNC sfc: reducedgrid=T interpolation not valid for writing sfc files"
-       ! call stop2(22)
        call mpi_barrier(mpi_comm_world,ierr)
        call mpi_finalize(ierr)
    endif
@@ -546,11 +539,7 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
-     !   if (tmp2m_ind > 0 .and. iope==0)
-     !      call copytogrdin(ug,grdin(:,levels(n3d) + tmp2m_ind,nb,ne))
-     !   endif
    endif
    if (spfh2m_ind > 0) then
        call read_vardata(dset_sfc, 'spfh2m', values_2d, errcode=iret)
@@ -559,7 +548,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + spfh2m_ind,nb,ne))
    endif
    if (soilt1_ind > 0) then
@@ -569,7 +557,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt1_ind,nb,ne))
    endif
    if (soilt2_ind > 0) then
@@ -579,7 +566,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt2_ind,nb,ne))
    endif
    if (soilt3_ind > 0) then
@@ -589,7 +575,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt3_ind,nb,ne))
    endif
    if (soilt4_ind > 0) then
@@ -599,7 +584,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + soilt4_ind,nb,ne))
    endif
    if (slc1_ind > 0) then
@@ -609,7 +593,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc1_ind,nb,ne))
    endif
    if (slc2_ind > 0) then
@@ -619,7 +602,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc2_ind,nb,ne))
    endif
    if (slc3_ind > 0) then
@@ -629,7 +611,6 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc3_ind,nb,ne))
    endif
    if (slc4_ind > 0) then
@@ -639,21 +620,16 @@
                call stop2(22)
        endif
        ug = reshape(values_2d,(/nlons*nlats/))
-     !   call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
        if (iope==0) call copytogrdin(ug,grdin(:,levels(n3d) + slc4_ind,nb,ne))
    endif
 
    ! bring all the subdomains back to the main PE
-   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
- 
+   call mpi_barrier(iocomms(mem_pe(nproc)), iret) 
    if (allocated(values_2d)) deallocate(values_2d)
-
    call close_dataset(dset_sfc)
-
    call mpi_barrier(iocomms(mem_pe(nproc)), iret)
 
    end do sfcbackgroundloop ! loop over backgrounds to read in
-
  end if   !if (read_sfc_file
 
   ! remove the sub communicators
