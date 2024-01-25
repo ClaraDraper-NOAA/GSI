@@ -4953,8 +4953,7 @@
 
   call nccheck_incr(nf90_close(ncid_out))
 
-  end do backgroundloop ! loop over backgrounds to write out
-  
+  end do backgroundloop ! loop over backgrounds to write out  
   if (nproc == 0) then
        t2 = mpi_wtime()
        print *,'time in writeincrement_pnc atm_file on root',t2-t1,'secs'
@@ -5198,17 +5197,12 @@
       call nccheck_incr(nf90_close(ncid_out))
 
    end if
-
-!   call mpi_barrier(iocomms(mem_pe(nproc)), iret)
-!   call nccheck_incr(nf90_close(ncid_out))
-
-   end do sfcbackgroundloop ! loop over backgrounds to read in
    
+   end do sfcbackgroundloop ! loop over backgrounds to read in   
    if (nproc == 0) then
         t2 = mpi_wtime()
         print *,'time in writeincrement_pnc sfc_file on root',t2-t1,'secs'
    endif   
-
   endif  !write_Sfc
 
   ! remove the sub communicators
