@@ -5023,59 +5023,10 @@
    end if
    filenamein = trim(adjustl(datapath))//trim(adjustl(fgsfcfileprefixes(nb)))//"mem"//charnanal
    
-!   ! create the output netCDF increment file
-!   call nccheck_incr(nf90_create(path=trim(filenameout), cmode=ior(nf90_netcdf4, nf90_mpiio), ncid=ncid_out, &
-!                    comm = iocomms(mem_pe(nproc)), info = mpi_info_null))
-!
-!   ! create dimensions based on analysis resolution, not guess
-!   call nccheck_incr(nf90_def_dim(ncid_out, "longitude", nlons, lon_dimid))
-!   call nccheck_incr(nf90_def_dim(ncid_out, "latitude", nlats, lat_dimid))
-!   dimids2 = (/ lon_dimid, lat_dimid /)
-!   ! create variables
-!   call nccheck_incr(nf90_def_var(ncid_out, "longitude", nf90_real, (/lon_dimid/), lonvarid))
-!   call nccheck_incr(nf90_def_var(ncid_out, "latitude", nf90_real, (/lat_dimid/), latvarid))
-!
-!   call nccheck_incr(nf90_def_var(ncid_out, "tmp2m_inc", nf90_real, dimids2, tmp2mvarid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, tmp2mvarid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "spfh2m_inc", nf90_real, dimids2, spfh2mvarid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, spfh2mvarid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "soilt1_inc", nf90_real, dimids2, soilt1varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, soilt1varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "soilt2_inc", nf90_real, dimids2, soilt2varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, soilt2varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "soilt3_inc", nf90_real, dimids2, soilt3varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, soilt3varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "soilt4_inc", nf90_real, dimids2, soilt4varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, soilt4varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "slc1_inc", nf90_real, dimids2, slc1varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, slc1varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "slc2_inc", nf90_real, dimids2, slc2varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, slc2varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "slc3_inc", nf90_real, dimids2, slc3varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, slc3varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "slc4_inc", nf90_real, dimids2, slc4varid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, slc4varid, nf90_collective))
-!   call nccheck_incr(nf90_def_var(ncid_out, "soilsnow_mask", nf90_int, dimids2, maskvarid))
-!   ! call nccheck_incr(nf90_var_par_access(ncid_out, maskvarid, nf90_collective))
-!
-!   ! place global attributes to parallel calc_increment output
-!   call nccheck_incr(nf90_put_att(ncid_out, nf90_global, "source", "GSI EnKF"))
-!   call nccheck_incr(nf90_put_att(ncid_out, nf90_global, "comment", &
-!                    "global analysis increment from writeincrement_pnc"))
-!   call nccheck_incr(nf90_put_att(ncid_out, nf90_global, "analysis_time", iadateout))
-!   call nccheck_incr(nf90_put_att(ncid_out, nf90_global, "IAU_hour_from_guess", nhr_anal(nb)))
-!   ! add units to lat/lon because that's what the calc_increment utility has
-!   call nccheck_incr(nf90_put_att(ncid_out, lonvarid, "units", "degrees_east"))
-!   call nccheck_incr(nf90_put_att(ncid_out, latvarid, "units", "degrees_north"))
-!   ! end the netCDF file definition
-!   call nccheck_incr(nf90_enddef(ncid_out))
-   
-   !! note: only iope=0 is reading the filenamein. uncomment below to have all pes in iocomm read 
-   ! dsfg = open_dataset(filenamein, paropen=.true., mpicomm=iocomms(mem_pe(nproc)))
+   !! note: only iope=0 is reading the filenamein. Having all pes in iocomm write to a file slows it down.
+   !! Code to have all pes in iocomm writing to the file in branch feature/all_pes_write_sfc_incr
    if (iope==0) then
-      ! only iope=0 is reading the filenamein.comment below to have all pes in iocomm read 
       dsfg = open_dataset(filenamein)
-
      ! create the output netCDF increment file
      call nccheck_incr(nf90_create(path=trim(filenameout), cmode=nf90_netcdf4,ncid=ncid_out))
 
