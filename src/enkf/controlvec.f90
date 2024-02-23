@@ -363,7 +363,7 @@ if (paranc) then
      endif
      deallocate(grdin_mean)
      t2 = mpi_wtime()
-     print *,'time in write_control parnc on root',t2-t1,'secs'
+     print *,'time in write_control paranc on root',t2-t1,'secs'
    endif 
 end if
 
