@@ -4494,7 +4494,7 @@
      call mpi_bcast(grdin(1,1,nb,1),npts*ndim, mpi_real4, 0, iocomms(mem_pe(nproc)), iret)
   enddo
 
-  if (write_atm_file ) then   ! do only sfc write?
+  if (write_atm_file ) then   
    
   if (nproc == 0) t1 = mpi_wtime()
   ! loop through times and do the read
